@@ -1,5 +1,5 @@
 {
-	"name": "Nodes-Rewards",
+	"name": "POSCRewards",
 	"version": "0.1.0",
 	"description": "contracts for POSC node rewards.",
 	"engines": {
