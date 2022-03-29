@@ -19,7 +19,7 @@ import { Listener, Provider } from "@ethersproject/providers";
 import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
-interface RewardPoolInterface extends ethers.utils.Interface {
+interface POSCInterface extends ethers.utils.Interface {
   functions: {
     "accumulatedReward(uint256)": FunctionFragment;
     "claim(address)": FunctionFragment;
@@ -31,7 +31,9 @@ interface RewardPoolInterface extends ethers.utils.Interface {
     "holders(address)": FunctionFragment;
     "isClosed(uint256)": FunctionFragment;
     "node(address)": FunctionFragment;
+    "nodeExists(string)": FunctionFragment;
     "nodeList()": FunctionFragment;
+    "nodeOwners(string)": FunctionFragment;
     "open(address,string)": FunctionFragment;
     "opened(uint256)": FunctionFragment;
     "opens()": FunctionFragment;
@@ -78,7 +80,9 @@ interface RewardPoolInterface extends ethers.utils.Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "node", values: [string]): string;
+  encodeFunctionData(functionFragment: "nodeExists", values: [string]): string;
   encodeFunctionData(functionFragment: "nodeList", values?: undefined): string;
+  encodeFunctionData(functionFragment: "nodeOwners", values: [string]): string;
   encodeFunctionData(
     functionFragment: "open",
     values: [string, string]
@@ -148,7 +152,9 @@ interface RewardPoolInterface extends ethers.utils.Interface {
   decodeFunctionResult(functionFragment: "holders", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "isClosed", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "node", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "nodeExists", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "nodeList", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "nodeOwners", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "open", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "opened", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "opens", data: BytesLike): Result;
@@ -228,7 +234,7 @@ export type WithdrawalEvent = TypedEvent<
   [string, BigNumber] & { to: string; amount: BigNumber }
 >;
 
-export class RewardPool extends BaseContract {
+export class POSC extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
@@ -269,7 +275,7 @@ export class RewardPool extends BaseContract {
     toBlock?: string | number | undefined
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
-  interface: RewardPoolInterface;
+  interface: POSCInterface;
 
   functions: {
     accumulatedReward(
@@ -307,9 +313,13 @@ export class RewardPool extends BaseContract {
 
     node(holder_: string, overrides?: CallOverrides): Promise<[string]>;
 
+    nodeExists(node_: string, overrides?: CallOverrides): Promise<[boolean]>;
+
     nodeList(
       overrides?: CallOverrides
     ): Promise<[string[]] & { nodes_: string[] }>;
+
+    nodeOwners(arg0: string, overrides?: CallOverrides): Promise<[string]>;
 
     open(
       holder_: string,
@@ -413,7 +423,11 @@ export class RewardPool extends BaseContract {
 
   node(holder_: string, overrides?: CallOverrides): Promise<string>;
 
+  nodeExists(node_: string, overrides?: CallOverrides): Promise<boolean>;
+
   nodeList(overrides?: CallOverrides): Promise<string[]>;
+
+  nodeOwners(arg0: string, overrides?: CallOverrides): Promise<string>;
 
   open(
     holder_: string,
@@ -508,7 +522,11 @@ export class RewardPool extends BaseContract {
 
     node(holder_: string, overrides?: CallOverrides): Promise<string>;
 
+    nodeExists(node_: string, overrides?: CallOverrides): Promise<boolean>;
+
     nodeList(overrides?: CallOverrides): Promise<string[]>;
+
+    nodeOwners(arg0: string, overrides?: CallOverrides): Promise<string>;
 
     open(
       holder_: string,
@@ -697,7 +715,11 @@ export class RewardPool extends BaseContract {
 
     node(holder_: string, overrides?: CallOverrides): Promise<BigNumber>;
 
+    nodeExists(node_: string, overrides?: CallOverrides): Promise<BigNumber>;
+
     nodeList(overrides?: CallOverrides): Promise<BigNumber>;
+
+    nodeOwners(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     open(
       holder_: string,
@@ -808,7 +830,17 @@ export class RewardPool extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    nodeExists(
+      node_: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     nodeList(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    nodeOwners(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     open(
       holder_: string,

@@ -21,13 +21,9 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IERC20__factory>;
     getContractFactory(
-      name: "MultiSigWallet",
+      name: "POSC",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.MultiSigWallet__factory>;
-    getContractFactory(
-      name: "RewardPool",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.RewardPool__factory>;
+    ): Promise<Contracts.POSC__factory>;
 
     getContractAt(
       name: "Ownable",
@@ -40,15 +36,10 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IERC20>;
     getContractAt(
-      name: "MultiSigWallet",
+      name: "POSC",
       address: string,
       signer?: ethers.Signer
-    ): Promise<Contracts.MultiSigWallet>;
-    getContractAt(
-      name: "RewardPool",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.RewardPool>;
+    ): Promise<Contracts.POSC>;
 
     // default types
     getContractFactory(

@@ -7,8 +7,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
-contract RewardPool is Ownable {
-
+contract POSC is Ownable {
 	using SafeMath for uint256;
 	using SafeERC20 for IERC20;
 
@@ -26,13 +25,15 @@ contract RewardPool is Ownable {
 		string node;
 	}
 
+	uint256 public rewardPerBlock;
+
+	uint256 public opens;
+
 	IERC20 public token;
 
 	Pool[] public pools;
 
-	uint256 public rewardPerBlock;
-
-	uint256 public opens;
+	mapping(string => address) public nodeOwners;
 
 	mapping(address => Holder) public holders;
 
@@ -48,37 +49,32 @@ contract RewardPool is Ownable {
 
 	event Withdrawal(address indexed to, uint256 amount);
 
-	constructor(address admin, IERC20 token_, uint256 rewardPerBlock_) {
+	constructor(
+		address admin,
+		IERC20 token_,
+		uint256 rewardPerBlock_
+	) {
 		_transferOwnership(admin);
 		_setRewardPerBlock(rewardPerBlock_);
 		token = token_;
 	}
 
-	function open(address holder_,  string memory node_) external onlyOwner { 
+	function open(address holder_, string memory node_) external onlyOwner {
 		require(holder_ != address(0), 'RewardPool: invalid holder.');
 		require(bytes(node_).length > 0, 'RewardPool: invalid node.');
 		require(!holderExists(holder_), 'RewardPool: holder exists.');
-
+		require(!nodeExists(node_), 'RewardPool: node exists.');
+		nodeOwners[node_] = holder_;
 		uint256 pid = poolLength();
-		holders[holder_] = Holder({
-			pid: pid,
-			node: node_
-		});
+		holders[holder_] = Holder({ pid: pid, node: node_ });
 
-		pools.push(Pool({
-			holder: holder_,
-			open: block.number,
-			close: 0,
-			lastUpdated: block.number,
-			realised: 0,
-			claimed: 0
-		}));
+		pools.push(Pool({ holder: holder_, open: block.number, close: 0, lastUpdated: block.number, realised: 0, claimed: 0 }));
 
 		opens++;
-	
+
 		updatePools();
 
-		emit Open(pid);	
+		emit Open(pid);
 		emit SetNode(pid, holder_, node_);
 	}
 
@@ -97,24 +93,25 @@ contract RewardPool is Ownable {
 	}
 
 	function setNode(address to, string memory node_) external onlyOwner {
-		require(holderExists(to), 'RewardPool: nonexistent holder.');
 		require(bytes(node_).length > 0, 'RewardPool: invalid node.');
+		require(!nodeExists(node_), 'RewardPool: node exists.');
+		require(holderExists(to), 'RewardPool: nonexistent holder.');
 		holders[to].node = node_;
 
 		emit SetNode(holders[to].pid, to, node_);
 	}
 
-	function unrealised(uint256 pid) public view returns(uint256) {
-		uint256 end = isClosed(pid)? pools[pid].close: block.number;
+	function unrealised(uint256 pid) public view returns (uint256) {
+		uint256 end = isClosed(pid) ? pools[pid].close : block.number;
 		uint256 diff = end.sub(pools[pid].lastUpdated);
 		return rewardPerBlock.mul(diff).div(opens);
 	}
 
-	function reward(uint256 pid) public view returns(uint256) {
+	function reward(uint256 pid) public view returns (uint256) {
 		return pools[pid].realised.add(unrealised(pid));
 	}
 
-	function nodeList() public view returns(string[] memory nodes_) {
+	function nodeList() public view returns (string[] memory nodes_) {
 		nodes_ = new string[](poolLength());
 		for (uint256 i = 0; i < poolLength(); i++) {
 			address to = holder(i);
@@ -134,7 +131,7 @@ contract RewardPool is Ownable {
 		_claim(pid, to);
 	}
 
-	function _claim(uint256 pid, address to) internal returns(uint256 reward_) {
+	function _claim(uint256 pid, address to) internal returns (uint256 reward_) {
 		reward_ = reward(pid);
 		require(reward_ > 0, 'RewardPool: no reward to claim.');
 		pools[pid].claimed = pools[pid].claimed.add(reward_);
@@ -146,7 +143,7 @@ contract RewardPool is Ownable {
 	}
 
 	function updatePools() public {
-		for(uint256 pid = 0; pid < poolLength(); pid++) {
+		for (uint256 pid = 0; pid < poolLength(); pid++) {
 			if (isClosed(pid)) {
 				continue;
 			}
@@ -156,49 +153,53 @@ contract RewardPool is Ownable {
 	}
 
 	function _setRewardPerBlock(uint256 rewardPerBlock_) internal {
-		require(rewardPerBlock_ != 0 , 'RewardPool: invalid params.');
+		require(rewardPerBlock_ != 0, 'RewardPool: invalid param.');
 		rewardPerBlock = rewardPerBlock_;
 
 		emit SetRewardPerBlock(rewardPerBlock_);
 	}
 
-	function accumulatedReward(uint256 pid) public view onlyExists(pid) returns(uint256) {
+	function accumulatedReward(uint256 pid) public view onlyExists(pid) returns (uint256) {
 		return pools[pid].claimed.add(reward(pid));
 	}
 
-	function node(address holder_) public view returns(string memory) {
+	function node(address holder_) public view returns (string memory) {
 		return holders[holder_].node;
 	}
 
-	function holder(uint256 pid) public view onlyExists(pid) returns(address) {
+	function holder(uint256 pid) public view onlyExists(pid) returns (address) {
 		return pools[pid].holder;
 	}
 
-	function claimed(uint256 pid) public view returns(uint256) {
+	function claimed(uint256 pid) public view returns (uint256) {
 		return pools[pid].claimed;
 	}
 
-	function opened(uint256 pid) public view onlyExists(pid) returns(uint256) {
+	function opened(uint256 pid) public view onlyExists(pid) returns (uint256) {
 		return pools[pid].open;
 	}
 
-	function closed(uint256 pid) public view onlyExists(pid) returns(uint256) {
+	function closed(uint256 pid) public view onlyExists(pid) returns (uint256) {
 		return pools[pid].close;
 	}
 
-	function holderExists(address holder_) public view returns(bool) {
+	function holderExists(address holder_) public view returns (bool) {
 		return bytes(holders[holder_].node).length > 0;
 	}
 
-	function poolLength() public view returns(uint256) {
+	function nodeExists(string memory node_) public view returns (bool) {
+		return nodeOwners[node_] != address(0);
+	}
+
+	function poolLength() public view returns (uint256) {
 		return pools.length;
 	}
 
-	function isClosed(uint256 pid) public view onlyExists(pid) returns(bool) {
+	function isClosed(uint256 pid) public view onlyExists(pid) returns (bool) {
 		return pools[pid].close != 0;
 	}
 
-	function _exists(uint256 pid) internal view returns(bool) {
+	function _exists(uint256 pid) internal view returns (bool) {
 		return pid < poolLength();
 	}
 
@@ -206,5 +207,4 @@ contract RewardPool is Ownable {
 		require(_exists(pid), 'RewardPool: nonexistent pool.');
 		_;
 	}
-
 }
