@@ -125,7 +125,7 @@ contract POSC is Ownable {
 	}
 
 	function claim(address to) external {
-		require(holderExists(msg.sender), 'RewardPool: nonexistent holder.');
+		require(holderExists(msg.sender), 'RewardPool: caller is not a holder.');
 		uint256 pid = holders[msg.sender].pid;
 		require(!isClosed(pid), 'RewardPool: pool closed.');
 		_claim(pid, to);
